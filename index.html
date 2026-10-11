@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="mobile-web-app-capable" content="yes">
-		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
 		<meta name="theme-color" content="#140406">
 		<link rel="apple-touch-icon" href="index.apple-touch-icon.png">
 		<link rel="manifest" href="index.manifest.json">
@@ -19,6 +19,7 @@ html, body, #canvas {
 
 html, body {
 	height: 100%;
+	height: -webkit-fill-available;
 	height: 100dvh;
 	background-color: #140406;
 	overflow: hidden;
@@ -33,9 +34,13 @@ body {
 
 #canvas {
 	display: block;
-	width: 100%;
-	height: 100%;
-	height: 100dvh;
+	position: fixed;
+	top: var(--kak-inset-top, env(safe-area-inset-top, 0px));
+	right: var(--kak-inset-right, env(safe-area-inset-right, 0px));
+	bottom: var(--kak-inset-bottom, env(safe-area-inset-bottom, 0px));
+	left: var(--kak-inset-left, env(safe-area-inset-left, 0px));
+	width: auto;
+	height: auto;
 	touch-action: none;
 	background-color: #140406;
 }
@@ -52,7 +57,10 @@ body {
 	height: 0;
 	visibility: hidden;
 	pointer-events: none;
-	padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+	padding-top: var(--kak-inset-top, env(safe-area-inset-top, 0px));
+	padding-right: var(--kak-inset-right, env(safe-area-inset-right, 0px));
+	padding-bottom: var(--kak-inset-bottom, env(safe-area-inset-bottom, 0px));
+	padding-left: var(--kak-inset-left, env(safe-area-inset-left, 0px));
 }
 
 #status, #status-splash, #status-progress {
@@ -67,6 +75,11 @@ body {
 }
 
 #status {
+	position: fixed;
+	top: var(--kak-inset-top, env(safe-area-inset-top, 0px));
+	right: var(--kak-inset-right, env(safe-area-inset-right, 0px));
+	bottom: var(--kak-inset-bottom, env(safe-area-inset-bottom, 0px));
+	left: var(--kak-inset-left, env(safe-area-inset-left, 0px));
 	background-color: #242424;
 	display: flex;
 	flex-direction: column;
@@ -142,7 +155,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5527652,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index.pck":5535304,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 (function () {
 	var params = new URLSearchParams(window.location.search);
@@ -150,7 +163,22 @@ const GODOT_THREADS_ENABLED = false;
 		var size = params.get('size') || '390x844';
 		GODOT_CONFIG.args = ['--', '--phone-shots', '--shot-size=' + size];
 	}
+	function kakReadInsets() {
+		var probe = document.getElementById('kak-inset-probe');
+		var cs = probe ? getComputedStyle(probe) : null;
+		function n(v) {
+			var x = parseFloat(v);
+			return isNaN(x) ? 0 : x;
+		}
+		return {
+			top: cs ? n(cs.paddingTop) : 0,
+			right: cs ? n(cs.paddingRight) : 0,
+			bottom: cs ? n(cs.paddingBottom) : 0,
+			left: cs ? n(cs.paddingLeft) : 0
+		};
+	}
 	function kakFit() {
+		var inset = kakReadInsets();
 		var vv = window.visualViewport;
 		var w = Math.max(1, Math.round(vv ? vv.width : window.innerWidth));
 		var h = Math.max(1, Math.round(vv ? vv.height : window.innerHeight));
@@ -159,20 +187,35 @@ const GODOT_THREADS_ENABLED = false;
 		document.body.style.height = h + 'px';
 		var canvas = document.getElementById('canvas');
 		if (canvas) {
-			canvas.style.width = w + 'px';
-			canvas.style.height = h + 'px';
+			canvas.style.position = 'fixed';
+			canvas.style.top = inset.top + 'px';
+			canvas.style.right = inset.right + 'px';
+			canvas.style.bottom = inset.bottom + 'px';
+			canvas.style.left = inset.left + 'px';
+			canvas.style.width = Math.max(1, Math.round(w - inset.left - inset.right)) + 'px';
+			canvas.style.height = Math.max(1, Math.round(h - inset.top - inset.bottom)) + 'px';
 		}
-		var probe = document.getElementById('kak-inset-probe');
-		if (probe) {
-			var cs = getComputedStyle(probe);
-			var root = document.documentElement;
-			root.style.setProperty('--kak-sal', (parseFloat(cs.paddingLeft) || 0) + 'px');
-			root.style.setProperty('--kak-sat', (parseFloat(cs.paddingTop) || 0) + 'px');
-			root.style.setProperty('--kak-sar', (parseFloat(cs.paddingRight) || 0) + 'px');
-			root.style.setProperty('--kak-sab', (parseFloat(cs.paddingBottom) || 0) + 'px');
+		var status = document.getElementById('status');
+		if (status) {
+			status.style.top = inset.top + 'px';
+			status.style.right = inset.right + 'px';
+			status.style.bottom = inset.bottom + 'px';
+			status.style.left = inset.left + 'px';
 		}
+		var root = document.documentElement;
+		root.style.setProperty('--kak-sal', inset.left + 'px');
+		root.style.setProperty('--kak-sat', inset.top + 'px');
+		root.style.setProperty('--kak-sar', inset.right + 'px');
+		root.style.setProperty('--kak-sab', inset.bottom + 'px');
 	}
+	window.kakReadInsets = kakReadInsets;
+	window.kakFit = kakFit;
 	window.addEventListener('resize', kakFit);
+	window.addEventListener('orientationchange', function () {
+		kakFit();
+		setTimeout(kakFit, 60);
+		setTimeout(kakFit, 250);
+	});
 	if (window.visualViewport) {
 		window.visualViewport.addEventListener('resize', kakFit);
 		window.visualViewport.addEventListener('scroll', kakFit);
