@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1791923677|3173294';
+const CACHE_VERSION = '1791925242|3146629';
 /** @type {string} */
 const CACHE_PREFIX = 'Keeps and Kobold-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
